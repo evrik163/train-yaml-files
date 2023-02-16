@@ -1,0 +1,70 @@
+---
+- name: Preconfig
+  hosts: demo
+  tasks:
+    - name: docker-installation
+      block:
+
+
+      - name: installation of required utilits 
+        ansible.builtin.apt:
+          pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          update_cache: true
+      
+
+      - name:  creation of directory
+        file:
+          path: /etc/apt/keyrings
+          state: directory
+          mode: 0755
+
+      - name: key adding
+        apt_key:
+          url: https://download.docker.com/linux/debian/gpg
+          keyring: /etc/apt/keyrings/docker.gpg         
+          state: present
+      
+
+      - name: repo adding
+        apt_repository:
+          repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bullseye stable
+          state: present
+          filename: docker
+          update_cache: true
+
+
+      - name: engine installation
+        apt:
+          name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io 
+          - docker-buildx-plugin 
+          - docker-compose-plugin
+          update_cache: true
+
+
+      - name: status check
+        service:
+          name: docker
+          state: restarted
+          enabled: true
+
+
+      become: true
+
+
+    - name: user modifing and reboot
+      block:
+        - name: adding to sudo group
+          user:
+            name: paveldeb
+            groups: sudo, docker
+            append: true
+        - name: reboot
+          reboot:
+      become: true
